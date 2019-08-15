@@ -3,8 +3,19 @@ name = "waters"
 version = "0.1.0"
 authors = ["Wouter Geraedts <git@woutergeraedts.nl>"]
 edition = "2018"
+license = "MIT"
+repository = "https://github.com/wassasin/waters"
+keywords = ["ibe", "encryption", "ecc", "no_std"]
+categories = ["cryptography", "no-std"]
 
 [dependencies]
 rand = "0.4"
 tiny-keccak = "1.5.0"
 pairing = { version = "0.14.2", features = ["expose-arith"] }
+
+[dev-dependencies]
+criterion = "0.2"
+
+[[bench]]
+name = "main"
+harness = false
