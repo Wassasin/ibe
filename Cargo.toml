@@ -9,9 +9,13 @@ keywords = ["ibe", "encryption", "ecc", "no_std"]
 categories = ["cryptography", "no-std"]
 
 [dependencies]
-rand = "0.4"
+rand = "0.7"
 tiny-keccak = "1.5.0"
-pairing = { version = "0.14.2", features = ["expose-arith"] }
+bls12_381 = { git = "https://github.com/zkcrypto/bls12_381" }
+
+[dependencies.byteorder]
+version = "1"
+default-features = false
 
 [dev-dependencies]
 criterion = "0.2"
