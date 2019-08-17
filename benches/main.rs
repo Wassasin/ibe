@@ -20,7 +20,7 @@ fn criterion_benchmark(criterion: &mut Criterion) {
     });
     criterion.bench_function("setup", |b| {
         let mut rng = rand::thread_rng();
-        b.iter(|| setup(32, &mut rng))
+        b.iter(|| setup(&mut rng))
     });
     criterion.bench_function("derive", move |b| b.iter(|| Identity::derive(id)));
     criterion.bench_function("extract", move |b| {

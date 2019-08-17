@@ -5,7 +5,7 @@
 //!  * From: "[Secure and Practical Identity-Based Encryption](http://eprint.iacr.org/2005/369.pdf)"
 //!  * Published in: IET Information Security, 2007
 //!
-//! Uses [SHA3-256](https://crates.io/crates/tiny-keccak) for hashing to identities.
+//! Uses [SHA3-512](https://crates.io/crates/tiny-keccak) for hashing to identities.
 
 mod util;
 use crate::util::*;
@@ -13,7 +13,7 @@ use crate::util::*;
 use bls12_381::{G1Affine, G2Affine, G2Projective, Gt, Scalar};
 use rand::Rng;
 
-const HASH_BIT_LEN: usize = 256;
+const HASH_BIT_LEN: usize = 512;
 const HASH_BYTE_LEN: usize = HASH_BIT_LEN / 8;
 
 const BITSIZE: usize = 32;
@@ -82,13 +82,8 @@ impl Message {
 }
 
 /// Generate a keypair used by the Private Key Generator (PKG).
-pub fn setup<R: Rng>(l: usize, rng: &mut R) -> (PublicKey, SecretKey) {
+pub fn setup<R: Rng>(rng: &mut R) -> (PublicKey, SecretKey) {
     use core::ops::Mul;
-
-    let h_len = HASH_BYTE_LEN * 8;
-    let n = h_len / l;
-
-    assert_eq!(CHUNKS, n);
 
     let g: G1Affine = rand_g1(rng).into();
 
@@ -170,9 +165,9 @@ pub fn decrypt(usk: &UserPrivateKey, c: &CipherText) -> Message {
 
 impl Identity {
     /// Hash a byte slice to a set of Identity parameters, which acts as a user public key.
-    /// Uses sha3-256 internally.
+    /// Uses sha3-512 internally.
     pub fn derive(b: &[u8]) -> Identity {
-        let hash = tiny_keccak::sha3_256(b);
+        let hash = tiny_keccak::sha3_512(b);
 
         let mut result = [Scalar::zero(); CHUNKS];
         for (i, chunk) in hash.chunks_exact(CHUNKSIZE).enumerate() {
@@ -193,7 +188,6 @@ impl Identity {
 #[cfg(test)]
 mod tests {
     use super::*;
-    extern crate std;
 
     const ID: &'static str = "email:w.geraedts@sarif.nl";
 
@@ -206,7 +200,7 @@ mod tests {
 
         let m = Message::generate(&mut rng);
 
-        let (pk, sk) = setup(32, &mut rng);
+        let (pk, sk) = setup(&mut rng);
         let usk = extract(&pk, &sk, &kid, &mut rng);
 
         let c = encrypt(&pk, &kid, &m, &mut rng);
@@ -217,48 +211,20 @@ mod tests {
 
     #[test]
     fn identity_stability() {
-        use std::eprintln;
-
-        const REFERENCE: &'static [&'static [u8; 32]; 8] = &[
-            &[
-                83, 113, 43, 248, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0,
-            ],
-            &[
-                46, 236, 14, 79, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0,
-            ],
-            &[
-                122, 42, 216, 205, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0,
-            ],
-            &[
-                115, 29, 215, 34, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0,
-            ],
-            &[
-                8, 180, 89, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0,
-            ],
-            &[
-                71, 14, 143, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0,
-            ],
-            &[
-                191, 254, 197, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0,
-            ],
-            &[
-                159, 204, 22, 156, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0,
-            ],
+        const REFERENCE: &'static [u32; 16] = &[
+            224058892, 3543031066, 2100894308, 1450993543, 380724969, 4144530249, 2749396120,
+            320408521, 409248772, 2464563459, 877936958, 2596797041, 3979538376, 3505820338,
+            590474010, 189115610,
         ];
 
         let id = ID.as_bytes();
         let kid = Identity::derive(id);
 
         for (kidi, ri) in kid.0.iter().zip(REFERENCE) {
-            assert_eq!(kidi.to_bytes(), **ri);
+            let mut buf = [0u8; 32];
+            buf[0..4].copy_from_slice(&ri.to_le_bytes());
+
+            assert_eq!(kidi.to_bytes(), buf);
         }
     }
 }
