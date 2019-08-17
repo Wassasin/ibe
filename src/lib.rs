@@ -7,12 +7,11 @@
 //!
 //! Uses [SHA3-256](https://crates.io/crates/tiny-keccak) for hashing to identities.
 
-// mod util;
+mod util;
+use crate::util::*;
 
-use bls12_381::{G1Affine, G2Affine, G1Projective, G2Projective, Gt, Scalar};
-// use pairing::{CurveProjective, Engine, Field, PrimeField};
+use bls12_381::{G1Affine, G2Affine, G2Projective, Gt, Scalar};
 use rand::Rng;
-use byteorder::{ByteOrder, LittleEndian};
 
 const HASH_BIT_LEN: usize = 256;
 const HASH_BYTE_LEN: usize = HASH_BIT_LEN / 8;
@@ -61,47 +60,7 @@ pub struct CipherText {
     c3: G2Affine,
 }
 
-fn rand_scalar<R: ::rand::Rng>(rng: &mut R) -> Scalar {
-    let mut buf = [0u8; 64];
-    rng.fill_bytes(&mut buf);
-
-    Scalar::from_bytes_wide(&buf)
-}
-
-fn rand_g1<R: ::rand::Rng>(rng: &mut R) -> G1Projective {
-    use core::ops::Mul;
-    let g = G1Projective::generator();
-    let x = rand_scalar(rng);
-    g.mul(x)
-}
-
-fn rand_g2<R: ::rand::Rng>(rng: &mut R) -> G2Projective {
-    use core::ops::Mul;
-    let g = G2Projective::generator();
-    let x = rand_scalar(rng);
-    g.mul(x)
-}
-
-fn rand_gt<R: ::rand::Rng>(rng: &mut R) -> Gt {
-    let g1 = rand_g1(rng);
-    let g2 = rand_g2(rng);
-    bls12_381::pairing(&G1Affine::from(g1), &G2Affine::from(g2))
-}
-
-// TODO check implementation
-fn pow_scalar(lhs: &Scalar, rhs: &Scalar) -> Scalar {
-    let buf = rhs.to_bytes();
-    let e = [
-        LittleEndian::read_u64(&buf[0..8]),
-        LittleEndian::read_u64(&buf[8..16]),
-        LittleEndian::read_u64(&buf[16..24]),
-        LittleEndian::read_u64(&buf[24..32]),
-    ];
-
-    lhs.pow(&e)
-}
-
-// /// A point on the paired curve that can be encrypted and decrypted. Unmarshals to a key usable in AES.
+/// A point on the paired curve that can be encrypted and decrypted. Unmarshals to a key usable in AES.
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub struct Message(Gt);
 
@@ -216,9 +175,9 @@ impl Identity {
         let hash = tiny_keccak::sha3_256(b);
 
         let mut result = [Scalar::zero(); CHUNKS];
-        for (i, chunk) in hash.chunks_exact(CHUNKS).enumerate() {
+        for (i, chunk) in hash.chunks_exact(CHUNKSIZE).enumerate() {
             use core::convert::TryInto;
-            result[i] = u64::from_le_bytes(chunk.try_into().unwrap()).into();
+            result[i] = u64::from(u32::from_le_bytes(chunk.try_into().unwrap())).into();
         }
 
         Identity(result)
@@ -233,8 +192,8 @@ impl Identity {
 
 #[cfg(test)]
 mod tests {
-    extern crate std;
     use super::*;
+    extern crate std;
 
     const ID: &'static str = "email:w.geraedts@sarif.nl";
 
@@ -256,14 +215,50 @@ mod tests {
         assert_eq!(m, m2);
     }
 
-    // #[test]
-    // fn identity_stability() {
-    //     use std::eprintln;
-    //     const REFERENCE: Identity = Identity([Fr(FrRepr([14203934459016671978, 8273609933914418952, 14014603559629590768, 7636334028375760790])), Fr(FrRepr([8799993730701008736, 6641523070592116114, 15664207911569855817, 3602475904748110484])), Fr(FrRepr([642564103857791219, 7985374078981486964, 6568666398051686446, 4051603964320429532])), Fr(FrRepr([16577230410371047587, 10825025205331962749, 2156706444940226086, 5240033946088233315])), Fr(FrRepr([0, 0, 0, 0])), Fr(FrRepr([0, 0, 0, 0])), Fr(FrRepr([0, 0, 0, 0])), Fr(FrRepr([0, 0, 0, 0]))]);
+    #[test]
+    fn identity_stability() {
+        use std::eprintln;
 
-    //     let id = ID.as_bytes();
-    //     let kid = Identity::derive(id);
+        const REFERENCE: &'static [&'static [u8; 32]; 8] = &[
+            &[
+                83, 113, 43, 248, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0,
+            ],
+            &[
+                46, 236, 14, 79, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0,
+            ],
+            &[
+                122, 42, 216, 205, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0,
+            ],
+            &[
+                115, 29, 215, 34, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0,
+            ],
+            &[
+                8, 180, 89, 64, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0,
+            ],
+            &[
+                71, 14, 143, 55, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0,
+            ],
+            &[
+                191, 254, 197, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0,
+            ],
+            &[
+                159, 204, 22, 156, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0,
+            ],
+        ];
 
-    //     eprintln!("{:?}", kid);
-    // }
+        let id = ID.as_bytes();
+        let kid = Identity::derive(id);
+
+        for (kidi, ri) in kid.0.iter().zip(REFERENCE) {
+            assert_eq!(kidi.to_bytes(), **ri);
+        }
+    }
 }
