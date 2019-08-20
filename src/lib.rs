@@ -246,7 +246,7 @@ pub fn extract<R: Rng>(
 ) -> UserPrivateKey {
     let mut ucoll: G2Projective = pk.uprime.into();
     for (ui, vi) in pk.u.0.iter().zip(&v.0) {
-        ucoll = ucoll * pow_scalar(ui, vi);
+        ucoll *= ui.pow(&vi.into());
     }
 
     let r = rand_scalar(rng);
@@ -262,7 +262,7 @@ pub fn encrypt<R: Rng>(pk: &PublicKey, v: &Identity, m: &Message, rng: &mut R) -
 
     let mut c3coll: G2Projective = pk.uprime.into();
     for (ui, vi) in pk.u.0.iter().zip(&v.0) {
-        c3coll *= pow_scalar(ui, vi);
+        c3coll *= ui.pow(&vi.into());
     }
 
     let c1 = bls12_381::pairing(&pk.g1, &pk.g2) * t + m.0;

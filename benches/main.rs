@@ -9,7 +9,7 @@ fn criterion_benchmark(criterion: &mut Criterion) {
 
     let m = Message::generate(&mut rng);
 
-    let (pk, sk) = setup(32, &mut rng);
+    let (pk, sk) = setup(&mut rng);
     let usk = extract(&pk, &sk, &kid, &mut rng);
 
     let c = encrypt(&pk, &kid, &m, &mut rng);
