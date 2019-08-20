@@ -10,7 +10,7 @@ fn criterion_benchmark(criterion: &mut Criterion) {
     let m = Message::generate(&mut rng);
 
     let (pk, sk) = setup(&mut rng);
-    let usk = extract(&pk, &sk, &kid, &mut rng);
+    let usk = extract_usk(&pk, &sk, &kid, &mut rng);
 
     let c = encrypt(&pk, &kid, &m, &mut rng);
 
@@ -25,7 +25,7 @@ fn criterion_benchmark(criterion: &mut Criterion) {
     criterion.bench_function("derive", move |b| b.iter(|| Identity::derive(id)));
     criterion.bench_function("extract", move |b| {
         let mut rng = rand::thread_rng();
-        b.iter(|| extract(&pk, &sk, &kid, &mut rng))
+        b.iter(|| extract_usk(&pk, &sk, &kid, &mut rng))
     });
     criterion.bench_function("encrypt", move |b| {
         let mut rng = rand::thread_rng();
