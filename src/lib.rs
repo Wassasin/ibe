@@ -288,9 +288,13 @@ impl Identity {
         let hash = tiny_keccak::sha3_512(b);
 
         let mut result = [Scalar::zero(); CHUNKS];
-        for (i, chunk) in hash.chunks_exact(CHUNKSIZE).enumerate() {
-            use core::convert::TryInto;
-            result[i] = u64::from(u32::from_le_bytes(chunk.try_into().unwrap())).into();
+        for i in 0..CHUNKS {
+            result[i] = u64::from(u32::from_le_bytes(*array_ref![
+                hash,
+                i * CHUNKSIZE,
+                CHUNKSIZE
+            ]))
+            .into();
         }
 
         Identity(result)
