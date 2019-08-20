@@ -188,7 +188,9 @@ impl CipherText {
     }
 }
 
-/// A point on the paired curve that can be encrypted and decrypted. Unmarshals to a key usable in AES.
+/// A point on the paired curve that can be encrypted and decrypted.
+///
+/// You can use the byte representation to derive an AES key.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Message(Gt);
 
