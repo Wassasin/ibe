@@ -83,12 +83,10 @@ impl Message {
 
 /// Generate a keypair used by the Private Key Generator (PKG).
 pub fn setup<R: Rng>(rng: &mut R) -> (PublicKey, SecretKey) {
-    use core::ops::Mul;
-
     let g: G1Affine = rand_g1(rng).into();
 
     let alpha = rand_scalar(rng);
-    let g1 = g.mul(alpha).into();
+    let g1 = (g * alpha).into();
 
     let g2 = rand_g2(rng).into();
     let uprime = rand_g2(rng).into();
@@ -106,7 +104,7 @@ pub fn setup<R: Rng>(rng: &mut R) -> (PublicKey, SecretKey) {
         u,
     };
 
-    let g2prime: G2Affine = g2.mul(alpha).into();
+    let g2prime: G2Affine = (g2 * alpha).into();
 
     let sk = SecretKey { g2prime };
 
@@ -120,46 +118,40 @@ pub fn extract<R: Rng>(
     v: &Identity,
     rng: &mut R,
 ) -> UserPrivateKey {
-    use core::ops::{Add, Mul};
-
     let mut ucoll: G2Projective = pk.uprime.into();
     for (ui, vi) in pk.u.iter().zip(&v.0) {
-        ucoll = ucoll.mul(pow_scalar(ui, vi));
+        ucoll = ucoll * pow_scalar(ui, vi);
     }
 
     let r = rand_scalar(rng);
-    let d1 = sk.g2prime.add(ucoll.mul(r)).into();
-    let d2 = pk.g.mul(r).into();
+    let d1 = (sk.g2prime + (ucoll * r)).into();
+    let d2 = (pk.g * r).into();
 
     UserPrivateKey { d1, d2 }
 }
 
 /// Encrypt a message using the PKG public key and an identity.
 pub fn encrypt<R: Rng>(pk: &PublicKey, v: &Identity, m: &Message, rng: &mut R) -> CipherText {
-    use core::ops::{Add, Mul};
-
     let t = rand_scalar(rng);
 
     let mut c3coll: G2Projective = pk.uprime.into();
     for (ui, vi) in pk.u.iter().zip(&v.0) {
-        c3coll = c3coll.mul(pow_scalar(ui, vi));
+        c3coll *= pow_scalar(ui, vi);
     }
 
-    let c1 = bls12_381::pairing(&pk.g1, &pk.g2).mul(t).add(m.0);
-    let c2 = pk.g.mul(t).into();
-    let c3 = c3coll.mul(t).into();
+    let c1 = bls12_381::pairing(&pk.g1, &pk.g2) * t + m.0;
+    let c2 = (pk.g * t).into();
+    let c3 = (c3coll * t).into();
 
     CipherText { c1, c2, c3 }
 }
 
 /// Decrypt ciphertext to a message using a user private key.
 pub fn decrypt(usk: &UserPrivateKey, c: &CipherText) -> Message {
-    use core::ops::{Add, Sub};
-
     let num = bls12_381::pairing(&usk.d2, &c.c3);
     let dem = bls12_381::pairing(&c.c2, &usk.d1);
 
-    let m = c.c1.add(num).sub(dem);
+    let m = c.c1 + num - dem;
     Message(m)
 }
 
