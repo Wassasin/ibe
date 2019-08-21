@@ -22,7 +22,11 @@ pub fn rand_g2<R: ::rand::Rng>(rng: &mut R) -> G2Projective {
 }
 
 pub fn rand_gt<R: ::rand::Rng>(rng: &mut R) -> Gt {
-    let g1 = rand_g1(rng);
-    let g2 = rand_g2(rng);
-    bls12_381::pairing(&G1Affine::from(g1), &G2Affine::from(g2))
+    let generator = bls12_381::pairing(
+        &G1Affine::generator(),
+        &G2Affine::generator()
+    );
+
+    let r = rand_scalar(rng);
+    generator * r
 }
