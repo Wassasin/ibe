@@ -26,17 +26,17 @@ const BITSIZE: usize = 32;
 const CHUNKSIZE: usize = BITSIZE / 8;
 const CHUNKS: usize = HASH_BYTE_LEN / CHUNKSIZE;
 
-const PARAMETERSIZE: usize = CHUNKS * 32;
+const PARAMETERSIZE: usize = CHUNKS * 96;
 const PUBLICKEYSIZE: usize = 2 * 48 + 2 * 96 + PARAMETERSIZE;
 
 #[derive(Default, Clone, Copy, PartialEq, Debug)]
-struct Parameters([Scalar; CHUNKS]);
+struct Parameters([G2Affine; CHUNKS]);
 
 impl ConditionallySelectable for Parameters {
     fn conditional_select(a: &Self, b: &Self, choice: Choice) -> Self {
-        let mut res = [Scalar::default(); CHUNKS];
+        let mut res = [G2Affine::default(); CHUNKS];
         for (i, (ai, bi)) in a.0.iter().zip(b.0.iter()).enumerate() {
-            res[i] = Scalar::conditional_select(&ai, &bi, choice);
+            res[i] = G2Affine::conditional_select(&ai, &bi, choice);
         }
         Parameters(res)
     }
@@ -46,16 +46,16 @@ impl Parameters {
     pub fn to_bytes(&self) -> [u8; PARAMETERSIZE] {
         let mut res = [0u8; PARAMETERSIZE];
         for i in 0..CHUNKS {
-            *array_mut_ref![&mut res, i * 32, 32] = self.0[i].to_bytes();
+            *array_mut_ref![&mut res, i * 96, 96] = self.0[i].to_compressed();
         }
         res
     }
 
     pub fn from_bytes(bytes: &[u8; PARAMETERSIZE]) -> CtOption<Self> {
-        let mut res = [Scalar::default(); CHUNKS];
+        let mut res = [G2Affine::default(); CHUNKS];
         let mut is_some = Choice::from(1u8);
         for i in 0..CHUNKS {
-            is_some &= Scalar::from_bytes(array_ref![bytes, i * 32, 32])
+            is_some &= G2Affine::from_compressed(array_ref![bytes, i * 96, 96])
                 .map(|s| {
                     res[i] = s;
                 })
@@ -223,9 +223,9 @@ pub fn setup<R: Rng>(rng: &mut R) -> (PublicKey, SecretKey) {
     let g2 = rand_g2(rng).into();
     let uprime = rand_g2(rng).into();
 
-    let mut u = Parameters([Scalar::zero(); CHUNKS]);
+    let mut u = Parameters([G2Affine::default(); CHUNKS]);
     for ui in u.0.iter_mut() {
-        *ui = rand_scalar(rng);
+        *ui = rand_g2(rng).into();
     }
 
     let pk = PublicKey {
@@ -252,7 +252,7 @@ pub fn extract_usk<R: Rng>(
 ) -> UserSecretKey {
     let mut ucoll: G2Projective = pk.uprime.into();
     for (ui, vi) in pk.u.0.iter().zip(&v.0) {
-        ucoll *= ui.pow(&vi.into());
+        ucoll += ui * vi;
     }
 
     let r = rand_scalar(rng);
@@ -268,7 +268,7 @@ pub fn encrypt<R: Rng>(pk: &PublicKey, v: &Identity, m: &Message, rng: &mut R) -
 
     let mut c3coll: G2Projective = pk.uprime.into();
     for (ui, vi) in pk.u.0.iter().zip(&v.0) {
-        c3coll *= ui.pow(&vi.into());
+        c3coll += ui * vi;
     }
 
     let c1 = bls12_381::pairing(&pk.g1, &pk.g2) * t + m.0;
