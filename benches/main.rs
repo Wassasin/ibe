@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use waters::*;
 
 fn criterion_benchmark(criterion: &mut Criterion) {
@@ -25,13 +25,15 @@ fn criterion_benchmark(criterion: &mut Criterion) {
     criterion.bench_function("derive", move |b| b.iter(|| Identity::derive(id)));
     criterion.bench_function("extract", move |b| {
         let mut rng = rand::thread_rng();
-        b.iter(|| extract_usk(&pk, &sk, &kid, &mut rng))
+        b.iter(|| extract_usk(black_box(&pk), black_box(&sk), black_box(&kid), &mut rng))
     });
     criterion.bench_function("encrypt", move |b| {
         let mut rng = rand::thread_rng();
-        b.iter(|| encrypt(&pk, &kid, &m, &mut rng))
+        b.iter(|| encrypt(black_box(&pk), black_box(&kid), black_box(&m), &mut rng))
     });
-    criterion.bench_function("decrypt", move |b| b.iter(|| decrypt(&usk, &c)));
+    criterion.bench_function("decrypt", move |b| {
+        b.iter(|| decrypt(black_box(&usk), black_box(&c)))
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

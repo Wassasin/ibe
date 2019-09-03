@@ -243,6 +243,16 @@ pub fn setup<R: Rng>(rng: &mut R) -> (PublicKey, SecretKey) {
     (pk, sk)
 }
 
+/// Common operation used in extraction and encryption to entangle
+/// PublicKey with Identity into a point on G2.
+fn entangle(pk: &PublicKey, v: &Identity) -> G2Projective {
+    let mut ucoll: G2Projective = pk.uprime.into();
+    for (ui, vi) in pk.u.0.iter().zip(&v.0) {
+        ucoll += ui * vi;
+    }
+    ucoll
+}
+
 /// Extract an user secret key for a given identity.
 pub fn extract_usk<R: Rng>(
     pk: &PublicKey,
@@ -250,12 +260,8 @@ pub fn extract_usk<R: Rng>(
     v: &Identity,
     rng: &mut R,
 ) -> UserSecretKey {
-    let mut ucoll: G2Projective = pk.uprime.into();
-    for (ui, vi) in pk.u.0.iter().zip(&v.0) {
-        ucoll += ui * vi;
-    }
-
     let r = rand_scalar(rng);
+    let ucoll = entangle(pk, v);
     let d1 = (sk.g2prime + (ucoll * r)).into();
     let d2 = (pk.g * r).into();
 
@@ -266,11 +272,7 @@ pub fn extract_usk<R: Rng>(
 pub fn encrypt<R: Rng>(pk: &PublicKey, v: &Identity, m: &Message, rng: &mut R) -> CipherText {
     let t = rand_scalar(rng);
 
-    let mut c3coll: G2Projective = pk.uprime.into();
-    for (ui, vi) in pk.u.0.iter().zip(&v.0) {
-        c3coll += ui * vi;
-    }
-
+    let c3coll = entangle(pk, v);
     let c1 = bls12_381::pairing(&pk.g1, &pk.g2) * t + m.0;
     let c2 = (pk.g * t).into();
     let c3 = (c3coll * t).into();
