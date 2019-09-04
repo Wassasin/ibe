@@ -20,7 +20,7 @@ const HASH_BYTE_LEN: usize = HASH_BIT_LEN / 8;
 
 const CHUNKS: usize = HASH_BIT_LEN;
 
-const PARAMETERSIZE: usize = CHUNKS * 96;
+const PARAMETERSIZE: usize = CHUNKS * 48;
 const PUBLICKEYSIZE: usize = 2 * 48 + 2 * 96 + PARAMETERSIZE;
 
 /// Public key parameters used for entanglement with identities.
