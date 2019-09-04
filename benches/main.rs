@@ -1,7 +1,8 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use waters::*;
 
 fn criterion_benchmark(criterion: &mut Criterion) {
+    use waters::naccache::*;
+
     let mut rng = rand::thread_rng();
 
     let id = "email:w.geraedts@sarif.nl".as_bytes();
