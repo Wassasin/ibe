@@ -112,7 +112,7 @@ fn bits<'a>(slice: &'a [u8]) -> impl Iterator<Item = subtle::Choice> + 'a {
 fn entangle(pk: &PublicKey, v: &Identity) -> G1Projective {
     let mut ucoll: G1Projective = pk.uprime.into();
     for (ui, vi) in pk.u.0.iter().zip(bits(&v.0)) {
-        ucoll = G1Projective::conditional_select(&(ui + ucoll).into(), &ucoll, vi);
+        ucoll = G1Projective::conditional_select(&ucoll, &(ui + ucoll).into(), vi);
     }
     ucoll
 }
@@ -227,12 +227,12 @@ impl Message {
         Self(rand_gt(rng))
     }
 
-    pub fn to_bytes(&self) -> [u8; 576] {
-        self.0.to_uncompressed()
+    pub fn to_bytes(&self) -> [u8; 288] {
+        self.0.to_compressed()
     }
 
-    pub fn from_bytes(bytes: &[u8; 576]) -> CtOption<Self> {
-        Gt::from_uncompressed(bytes).map(|m| Message(m))
+    pub fn from_bytes(bytes: &[u8; 288]) -> CtOption<Self> {
+        Gt::from_compressed(bytes).map(|m| Message(m))
     }
 }
 
@@ -320,19 +320,19 @@ impl Clone for Identity {
 impl Copy for Identity {}
 
 impl CipherText {
-    pub fn to_bytes(&self) -> [u8; 720] {
-        let mut res = [0u8; 720];
-        let (c1, c2, c3) = mut_array_refs![&mut res, 576, 96, 48];
-        *c1 = self.c1.to_uncompressed(); // TODO implement compressed
+    pub fn to_bytes(&self) -> [u8; 432] {
+        let mut res = [0u8; 432];
+        let (c1, c2, c3) = mut_array_refs![&mut res, 288, 96, 48];
+        *c1 = self.c1.to_compressed();
         *c2 = self.c2.to_compressed();
         *c3 = self.c3.to_compressed();
         res
     }
 
-    pub fn from_bytes(bytes: &[u8; 720]) -> CtOption<Self> {
-        let (c1, c2, c3) = array_refs![bytes, 576, 96, 48];
+    pub fn from_bytes(bytes: &[u8; 432]) -> CtOption<Self> {
+        let (c1, c2, c3) = array_refs![bytes, 288, 96, 48];
 
-        let c1 = Gt::from_uncompressed(c1);
+        let c1 = Gt::from_compressed(c1);
         let c2 = G2Affine::from_compressed(c2);
         let c3 = G1Affine::from_compressed(c3);
 
