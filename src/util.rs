@@ -27,3 +27,11 @@ pub fn rand_gt<R: ::rand::Rng>(rng: &mut R) -> Gt {
     let r = rand_scalar(rng);
     generator * r
 }
+
+pub fn bits<'a>(slice: &'a [u8]) -> impl Iterator<Item = subtle::Choice> + 'a {
+    slice
+        .iter()
+        .rev()
+        .zip((0..8).rev())
+        .map(|(x, i)| subtle::Choice::from((*x >> i) & 1))
+}
