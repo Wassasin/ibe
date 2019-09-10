@@ -99,20 +99,12 @@ pub fn setup<R: Rng>(rng: &mut R) -> (PublicKey, SecretKey) {
     (pk, sk)
 }
 
-fn bits<'a>(slice: &'a [u8]) -> impl Iterator<Item = subtle::Choice> + 'a {
-    slice
-        .iter()
-        .rev()
-        .zip((0..8).rev())
-        .map(|(x, i)| Choice::from((*x >> i) & 1))
-}
-
 /// Common operation used in extraction and encryption to entangle
 /// PublicKey with Identity into a point on G1.
 fn entangle(pk: &PublicKey, v: &Identity) -> G1Projective {
     let mut ucoll: G1Projective = pk.uprime.into();
     for (ui, vi) in pk.u.0.iter().zip(bits(&v.0)) {
-        ucoll = G1Projective::conditional_select(&ucoll, &(ui + ucoll).into(), vi);
+        ucoll = G1Projective::conditional_select(&ucoll, &(ui + ucoll), vi);
     }
     ucoll
 }
@@ -232,7 +224,7 @@ impl Message {
     }
 
     pub fn from_bytes(bytes: &[u8; 288]) -> CtOption<Self> {
-        Gt::from_compressed(bytes).map(|m| Message(m))
+        Gt::from_compressed(bytes).map(Message)
     }
 }
 
@@ -273,7 +265,7 @@ impl Clone for Parameters {
     fn clone(&self) -> Self {
         let mut res = [G1Affine::default(); CHUNKS];
         for (src, dst) in self.0.iter().zip(res.as_mut().iter_mut()) {
-            *dst = src.clone();
+            *dst = *src;
         }
         Parameters(res)
     }

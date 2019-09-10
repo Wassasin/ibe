@@ -1,10 +1,12 @@
-# Waters
-Identity Based Encryption Waters-Naccache scheme on the [BLS12-381 pairing-friendly elliptic curve](https://github.com/zkcrypto/bls12_381) in Rust.
+# IBE
+Identity Based Encryption schemes on the [BLS12-381 pairing-friendly elliptic curve](https://github.com/zkcrypto/bls12_381) in Rust.
 
-## Sources
-* Inspired by: [CHARM implementation](https://github.com/JHUISI/charm/blob/dev/charm/schemes/ibenc/ibenc_waters05.py)
-* From: "[Secure and Practical Identity-Based Encryption](http://eprint.iacr.org/2005/369.pdf)"
-* Published in: IET Information Security, 2007
+Implements the following schemes:
+* Waters
+* Waters-Naccache
+* Kiltz-Vahlis IBE1
+
+You should probably use the Kiltz-Vahlis IBE1 scheme, as it provides the best security properties.
 
 ## Technical notes
 * **This implementation has not (yet) been reviewed or audited. Use at your own risk.**
@@ -15,5 +17,4 @@ Identity Based Encryption Waters-Naccache scheme on the [BLS12-381 pairing-frien
 * All operations in this library are implemented to run in constant time.
 
 ## TODO's
-* Serialisation of `CipherText` might benefit from using a compressed format for `Gt`, as currently it serializes to a 576 bytes, which is relatively big.
 * The underlying libraries might benefit from running on Rust nightly, which prevents compiler optimizations that could jeopardize constant time operations, but enabling this will require using `subtle/nightly`.

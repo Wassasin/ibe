@@ -1,10 +1,10 @@
 [package]
-name = "waters"
+name = "ibe"
 version = "0.1.0"
 authors = ["Wouter Geraedts <git@woutergeraedts.nl>"]
 edition = "2018"
 license = "MIT"
-repository = "https://github.com/wassasin/waters"
+repository = "https://github.com/wassasin/ibe"
 keywords = ["ibe", "encryption", "ecc", "no_std"]
 categories = ["cryptography", "no-std"]
 

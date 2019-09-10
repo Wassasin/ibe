@@ -89,7 +89,7 @@ pub fn setup<R: Rng>(rng: &mut R) -> (PublicKey, SecretKey) {
 fn hash_to_curve(pk: &PublicKey, v: &Identity) -> G1Projective {
     let mut hcoll: G1Projective = pk.hzero.into();
     for (hi, vi) in pk.h.0.iter().zip(bits(&v.0)) {
-        hcoll = G1Projective::conditional_select(&hcoll, &(hi + hcoll).into(), vi);
+        hcoll = G1Projective::conditional_select(&hcoll, &(hi + hcoll), vi);
     }
     hcoll
 }
@@ -170,7 +170,7 @@ impl SymmetricKey {
     }
 
     pub fn from_bytes(bytes: &[u8; 288]) -> CtOption<Self> {
-        Gt::from_compressed(bytes).map(|m| Self(m))
+        Gt::from_compressed(bytes).map(Self)
     }
 }
 
@@ -217,7 +217,7 @@ impl Clone for HashParameters {
     fn clone(&self) -> Self {
         let mut res = [G1Affine::default(); N];
         for (src, dst) in self.0.iter().zip(res.as_mut().iter_mut()) {
-            *dst = src.clone();
+            *dst = *src;
         }
         Self(res)
     }

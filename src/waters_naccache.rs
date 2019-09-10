@@ -206,7 +206,7 @@ impl Message {
     }
 
     pub fn from_bytes(bytes: &[u8; 288]) -> CtOption<Self> {
-        Gt::from_compressed(bytes).map(|m| Message(m))
+        Gt::from_compressed(bytes).map(Message)
     }
 }
 
@@ -293,8 +293,8 @@ impl Identity {
         let hash = tiny_keccak::sha3_512(b);
 
         let mut result = [Scalar::zero(); CHUNKS];
-        for i in 0..CHUNKS {
-            result[i] = u64::from(u32::from_le_bytes(*array_ref![
+        for (i, r) in result.iter_mut().enumerate().take(CHUNKS) {
+            *r = u64::from(u32::from_le_bytes(*array_ref![
                 hash,
                 i * CHUNKSIZE,
                 CHUNKSIZE
