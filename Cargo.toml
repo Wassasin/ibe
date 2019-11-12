@@ -1,6 +1,7 @@
 [package]
 name = "ibe"
 version = "0.1.0"
+description = "Identity Based Encryption schemes on the BLS12-381 pairing-friendly elliptic curve"
 authors = ["Wouter Geraedts <git@woutergeraedts.nl>"]
 edition = "2018"
 license = "MIT"
