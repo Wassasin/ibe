@@ -9,12 +9,12 @@
 //! to remain constant between releases of this library.
 //! All operations in this library are implemented to run in constant time.
 
-use crate::util::*;
-
 use arrayref::{array_mut_ref, array_ref, array_refs, mut_array_refs};
-use bls12_381::{G1Affine, G2Affine, G2Projective, Gt, Scalar};
 use rand::Rng;
 use subtle::{Choice, ConditionallySelectable, CtOption};
+
+use crate::bls12_381::{G1Affine, G2Affine, G2Projective, Gt, Scalar};
+use crate::util::*;
 
 const HASH_BIT_LEN: usize = 512;
 const HASH_BYTE_LEN: usize = HASH_BIT_LEN / 8;
@@ -270,7 +270,7 @@ pub fn encrypt<R: Rng>(pk: &PublicKey, v: &Identity, m: &Message, rng: &mut R) -
     let t = rand_scalar(rng);
 
     let c3coll = entangle(pk, v);
-    let c1 = bls12_381::pairing(&pk.g1, &pk.g2) * t + m.0;
+    let c1 = crate::bls12_381::pairing(&pk.g1, &pk.g2) * t + m.0;
     let c2 = (pk.g * t).into();
     let c3 = (c3coll * t).into();
 
@@ -279,8 +279,8 @@ pub fn encrypt<R: Rng>(pk: &PublicKey, v: &Identity, m: &Message, rng: &mut R) -
 
 /// Decrypt ciphertext to a message using a user secret key.
 pub fn decrypt(usk: &UserSecretKey, c: &CipherText) -> Message {
-    let num = bls12_381::pairing(&usk.d2, &c.c3);
-    let dem = bls12_381::pairing(&c.c2, &usk.d1);
+    let num = crate::bls12_381::pairing(&usk.d2, &c.c3);
+    let dem = crate::bls12_381::pairing(&c.c2, &usk.d1);
 
     let m = c.c1 + num - dem;
     Message(m)

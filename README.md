@@ -10,6 +10,7 @@ You should probably use the Kiltz-Vahlis IBE1 scheme, as it provides the best se
 
 ## Technical notes
 * **This implementation has not (yet) been reviewed or audited. Use at your own risk.**
+* **A hard-copy of the bls12_381 crate is used will need to be update manually.**
 * Uses [SHA3-512](https://crates.io/crates/tiny-keccak) for hashing to identities.
 * Compiles succesfully on Rust Stable.
 * Does not use the Rust standard library (no-std).

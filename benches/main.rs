@@ -1,7 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn criterion_waters_benchmark(criterion: &mut Criterion) {
-    use waters::waters::*;
+    use ibe::waters::*;
 
     let mut rng = rand::thread_rng();
 
@@ -38,7 +38,7 @@ fn criterion_waters_benchmark(criterion: &mut Criterion) {
 }
 
 fn criterion_waters_naccache_benchmark(criterion: &mut Criterion) {
-    use waters::waters_naccache::*;
+    use ibe::waters_naccache::*;
 
     let mut rng = rand::thread_rng();
 
@@ -77,7 +77,7 @@ fn criterion_waters_naccache_benchmark(criterion: &mut Criterion) {
 }
 
 fn criterion_kiltz_vahlis_one_benchmark(criterion: &mut Criterion) {
-    use waters::kiltz_vahlis_one::*;
+    use ibe::kiltz_vahlis_one::*;
 
     let mut rng = rand::thread_rng();
 
@@ -111,8 +111,8 @@ fn criterion_kiltz_vahlis_one_benchmark(criterion: &mut Criterion) {
 
 criterion_group!(
     benches,
-    // criterion_waters_benchmark,
-    // criterion_waters_naccache_benchmark,
+    criterion_waters_benchmark,
+    criterion_waters_naccache_benchmark,
     criterion_kiltz_vahlis_one_benchmark,
 );
 criterion_main!(benches);

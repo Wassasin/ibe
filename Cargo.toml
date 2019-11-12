@@ -11,9 +11,12 @@ categories = ["cryptography", "no-std"]
 [dependencies]
 rand = "0.7"
 tiny-keccak = "1.5.0"
-subtle = "2.1.1"
 arrayref = "0.3.5"
-bls12_381 = { git = "https://github.com/wassasin/bls12_381", branch = "gt-serialisation" }
+# bls12_381 = { git = "https://github.com/wassasin/bls12_381", branch = "gt-serialisation" }
+
+[dependencies.subtle]
+version = "2.1"
+default-features = false
 
 [dependencies.byteorder]
 version = "1"
