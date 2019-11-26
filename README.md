@@ -10,7 +10,7 @@ You should probably use the Kiltz-Vahlis IBE1 scheme, as it provides the best se
 
 ## Technical notes
 * **This implementation has not (yet) been reviewed or audited. Use at your own risk.**
-* **A hard-copy of the bls12_381 crate is used will need to be update manually.**
+* **A hard-copy of the bls12_381 crate is used will need to be updated manually.**
 * Uses [SHA3-512](https://crates.io/crates/tiny-keccak) for hashing to identities.
 * Compiles succesfully on Rust Stable.
 * Does not use the Rust standard library (no-std).
@@ -19,3 +19,8 @@ You should probably use the Kiltz-Vahlis IBE1 scheme, as it provides the best se
 
 ## TODO's
 * The underlying libraries might benefit from running on Rust nightly, which prevents compiler optimizations that could jeopardize constant time operations, but enabling this will require using `subtle/nightly`.
+
+## Attribution
+This crate uses a hardcopy of the `bls12_381` crate which is licensed under the MIT and Apache licenses.
+The hardcopy can be found under `src/bls12_381`.
+Copyright of all sources in this folder belongs to the original authors.
