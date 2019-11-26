@@ -10,6 +10,8 @@
 //! Check the corresponding tests for concrete examples per scheme.
 //!
 //! ```
+//! use ibe::kiltz_vahlis_one::*;
+//!
 //! const ID: &'static str = "email:w.geraedts@sarif.nl";
 //! let mut rng = rand::thread_rng();
 //!
