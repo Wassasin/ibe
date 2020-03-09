@@ -13,7 +13,7 @@ categories = ["cryptography", "no-std"]
 rand = "0.7"
 tiny-keccak = "1.5.0"
 arrayref = "0.3.5"
-# bls12_381 = { git = "https://github.com/wassasin/bls12_381", branch = "gt-serialisation" }
+irmaseal-curve = "0.1.1"
 
 [dependencies.subtle]
 version = "2.2.1"

@@ -8,9 +8,9 @@
 //! to remain constant between releases of this library.
 //! All operations in this library are implemented to run in constant time.
 
-use crate::bls12_381::{G1Affine, G1Projective, G2Affine, Gt, Scalar};
 use crate::util::*;
 use arrayref::{array_mut_ref, array_ref, array_refs, mut_array_refs};
+use irmaseal_curve::{G1Affine, G1Projective, G2Affine, Gt, Scalar};
 use rand::Rng;
 use subtle::{Choice, ConditionallySelectable, CtOption};
 
@@ -72,7 +72,7 @@ pub fn setup<R: Rng>(rng: &mut R) -> (PublicKey, SecretKey) {
 
     let alpha: G1Affine = rand_g1(rng).into();
     let u: G1Affine = rand_g1(rng).into();
-    let z = crate::bls12_381::pairing(&alpha, &g);
+    let z = irmaseal_curve::pairing(&alpha, &g);
 
     let hzero = G1Affine::default();
     let mut h = HashParameters([G1Affine::default(); N]);
@@ -130,8 +130,8 @@ pub fn encrypt<R: Rng>(pk: &PublicKey, v: &Identity, rng: &mut R) -> (CipherText
 /// Decrypt ciphertext to a SymmetricKey using a user secret key.
 pub fn decrypt(usk: &UserSecretKey, c: &CipherText) -> SymmetricKey {
     let t = hash_g2_to_scalar(c.c1);
-    let k1 = crate::bls12_381::pairing(&(usk.d1 + (usk.d3 * t)).into(), &c.c1);
-    let k2 = crate::bls12_381::pairing(&c.c2, &usk.d2);
+    let k1 = irmaseal_curve::pairing(&(usk.d1 + (usk.d3 * t)).into(), &c.c1);
+    let k2 = irmaseal_curve::pairing(&c.c2, &usk.d2);
 
     let k = k1 + k2;
 

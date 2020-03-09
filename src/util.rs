@@ -1,4 +1,4 @@
-use crate::bls12_381::{G1Affine, G1Projective, G2Affine, G2Projective, Gt, Scalar};
+use irmaseal_curve::{G1Affine, G1Projective, G2Affine, G2Projective, Gt, Scalar};
 
 pub fn rand_scalar<R: ::rand::Rng>(rng: &mut R) -> Scalar {
     let mut buf = [0u8; 64];
@@ -22,7 +22,7 @@ pub fn rand_g2<R: ::rand::Rng>(rng: &mut R) -> G2Projective {
 }
 
 pub fn rand_gt<R: ::rand::Rng>(rng: &mut R) -> Gt {
-    let generator = crate::bls12_381::pairing(&G1Affine::generator(), &G2Affine::generator());
+    let generator = irmaseal_curve::pairing(&G1Affine::generator(), &G2Affine::generator());
 
     let r = rand_scalar(rng);
     generator * r
