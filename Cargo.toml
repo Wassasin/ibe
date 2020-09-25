@@ -24,8 +24,12 @@ version = "1"
 default-features = false
 
 [dev-dependencies]
-criterion = "0.2"
+criterion = "0.3"
+
+[lib]
+bench = false
 
 [[bench]]
 name = "main"
 harness = false
+
