@@ -86,9 +86,13 @@ fn criterion_kiltz_vahlis_one_benchmark(criterion: &mut Criterion) {
 
     let (pk, sk) = setup(&mut rng);
     let usk = extract_usk(&pk, &sk, &kid, &mut rng);
+    let ppk = pk.to_bytes();
 
     let (c, _k) = encrypt(&pk, &kid, &mut rng);
 
+    criterion.bench_function("kiltz_vahlis_one unpack_pk", |b| {
+        b.iter(|| PublicKey::from_bytes(&ppk))
+    });
     criterion.bench_function("kiltz_vahlis_one setup", |b| {
         let mut rng = rand::thread_rng();
         b.iter(|| setup(&mut rng))

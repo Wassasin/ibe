@@ -187,7 +187,8 @@ impl HashParameters {
         let mut res = [G1Affine::default(); N];
         let mut is_some = Choice::from(1u8);
         for i in 0..N {
-            is_some &= G1Affine::from_compressed(array_ref![bytes, i * 48, 48])
+            // See comment in PublicKey::from_bytes on cofactor.
+            is_some &= G1Affine::from_compressed_unchecked(array_ref![bytes, i * 48, 48])
                 .map(|s| {
                     res[i] = s;
                 })
@@ -247,11 +248,16 @@ impl PublicKey {
     pub fn from_bytes(bytes: &[u8; PUBLICKEYSIZE]) -> CtOption<Self> {
         let (g, hzero, h, u, z) = array_refs![&bytes, 96, 48, HASH_PARAMETER_SIZE, 48, 288];
 
-        let g = G2Affine::from_compressed(g);
-        let hzero = G1Affine::from_compressed(hzero);
+        // from_compressed_unchecked doesn't check whether the element has
+        // a cofactor.  To mount an attack using a cofactor an attacker
+        // must be able to manipulate the public parameters.  But then the
+        // attacker can simply use parameters they generated themselves.
+        // Thus checking for a cofactor is superfluous.
+        let g = G2Affine::from_compressed_unchecked(g);
+        let hzero = G1Affine::from_compressed_unchecked(hzero);
         let h = HashParameters::from_bytes(h);
-        let u = G1Affine::from_compressed(u);
-        let z = Gt::from_compressed(z);
+        let u = G1Affine::from_compressed_unchecked(u);
+        let z = Gt::from_compressed_unchecked(z);
 
         g.and_then(|g| {
             hzero.and_then(|hzero| {
