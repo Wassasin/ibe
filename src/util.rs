@@ -35,3 +35,27 @@ pub fn bits<'a>(slice: &'a [u8]) -> impl Iterator<Item = subtle::Choice> + 'a {
         .zip((0..8).rev())
         .map(|(x, i)| subtle::Choice::from((*x >> i) & 1))
 }
+
+pub fn sha3_256(slice: &[u8]) -> [u8; 32] {
+    use tiny_keccak::Hasher;
+
+    let mut digest = tiny_keccak::Sha3::v256();
+    digest.update(slice);
+
+    let mut buf = [0u8; 32];
+    digest.finalize(&mut buf);
+
+    return buf;
+}
+
+pub fn sha3_512(slice: &[u8]) -> [u8; 64] {
+    use tiny_keccak::Hasher;
+
+    let mut digest = tiny_keccak::Sha3::v512();
+    digest.update(slice);
+
+    let mut buf = [0u8; 64];
+    digest.finalize(&mut buf);
+
+    return buf;
+}

@@ -289,7 +289,7 @@ impl Identity {
     /// Hash a byte slice to a set of Identity parameters, which acts as a user public key.
     /// Uses sha3-256 internally.
     pub fn derive(b: &[u8]) -> Identity {
-        Identity(tiny_keccak::sha3_256(b))
+        Identity(sha3_256(b))
     }
 
     /// Hash a string slice to a set of Identity parameters.

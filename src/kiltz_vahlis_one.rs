@@ -95,7 +95,7 @@ fn hash_to_curve(pk: &PublicKey, v: &Identity) -> G1Projective {
 }
 
 fn hash_g2_to_scalar(x: G2Affine) -> Scalar {
-    let buf = tiny_keccak::sha3_512(&x.to_uncompressed());
+    let buf = sha3_512(&x.to_uncompressed());
     Scalar::from_bytes_wide(&buf)
 }
 
@@ -142,7 +142,7 @@ impl Identity {
     /// Hash a byte slice to a set of Identity parameters, which acts as a user public key.
     /// Uses sha3-512 internally.
     pub fn derive(b: &[u8]) -> Identity {
-        Identity(tiny_keccak::sha3_512(b))
+        Identity(sha3_512(b))
     }
 
     /// Hash a string slice to a set of Identity parameters.

@@ -290,7 +290,7 @@ impl Identity {
     /// Hash a byte slice to a set of Identity parameters, which acts as a user public key.
     /// Uses sha3-512 internally.
     pub fn derive(b: &[u8]) -> Identity {
-        let hash = tiny_keccak::sha3_512(b);
+        let hash = sha3_512(b);
 
         let mut result = [Scalar::zero(); CHUNKS];
         for (i, r) in result.iter_mut().enumerate().take(CHUNKS) {
