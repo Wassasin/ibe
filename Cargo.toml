@@ -1,8 +1,8 @@
 [package]
 name = "ibe"
-version = "0.1.4"
+version = "0.1.5"
 description = "Identity Based Encryption schemes on the BLS12-381 pairing-friendly elliptic curve"
-authors = ["Wouter Geraedts <git@woutergeraedts.nl>"]
+authors = ["Wouter Geraedts <git@woutergeraedts.nl>", "Leon Botros <l.botros@cs.ru.nl>"]
 edition = "2018"
 license = "MIT"
 repository = "https://github.com/wassasin/ibe"
@@ -13,7 +13,7 @@ categories = ["cryptography", "no-std"]
 rand = "0.7"
 tiny-keccak = { version = "2.0", features = ["sha3"] }
 arrayref = "0.3"
-irmaseal-curve = "0.1"
+irmaseal-curve = { git = "https://github.com/encryption4all/irmaseal-curve.git"}
 
 [dependencies.subtle]
 version = "2.3"
