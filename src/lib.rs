@@ -41,7 +41,7 @@ extern crate std;
 
 mod util;
 
-pub mod boyens_waters;
+pub mod boyen_waters;
 pub mod kiltz_vahlis_one;
 pub mod waters;
 pub mod waters_naccache;
