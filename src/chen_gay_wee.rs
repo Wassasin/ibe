@@ -6,7 +6,10 @@
 
 use crate::util::*;
 
-use irmaseal_curve::{multi_miller_loop, pairing, G1Affine, G2Affine, G2Prepared, Gt, Scalar};
+use irmaseal_curve::{
+    multi_miller_loop, pairing, G1Affine, G1Projective, G2Affine, G2Prepared, G2Projective, Gt,
+    Scalar,
+};
 use rand::Rng;
 use subtle::CtOption;
 
@@ -101,9 +104,21 @@ pub fn setup<R: Rng>(rng: &mut R) -> (PublicKey, SecretKey) {
         w1[0][1] * a[0] + w1[1][1] * a[1],
     ];
 
-    let a_1 = [(g1 * a[0]).into(), (g1 * a[1]).into()];
-    let w0ta_1 = [(g1 * w0ta[0]).into(), (g1 * w0ta[1]).into()];
-    let w1ta_1 = [(g1 * w1ta[0]).into(), (g1 * w1ta[1]).into()];
+    let batch = [
+        g1 * a[0],
+        g1 * a[1],
+        g1 * w0ta[0],
+        g1 * w0ta[1],
+        g1 * w1ta[0],
+        g1 * w1ta[1],
+    ];
+
+    let mut out = [G1Affine::default(); 6];
+    G1Projective::batch_normalize(&batch, &mut out);
+    let a_1 = [out[0], out[1]];
+    let w0ta_1 = [out[2], out[3]];
+    let w1ta_1 = [out[4], out[5]];
+
     let kta_t = pairing(&g1, &g2) * (k[0] * a[0] + k[1] * a[1]);
 
     (
@@ -142,29 +157,40 @@ pub fn extract_usk<R: Rng>(sk: &SecretKey, v: &Identity, rng: &mut R) -> UserSec
         x[1][0] * br[0] + x[1][1] * br[1] + sk.k[1],
     ];
 
-    let d0: [G2Affine; 2] = [(g2 * br[0]).into(), (g2 * br[1]).into()];
-    let d1: [G2Affine; 2] = [(g2 * xbrplusk[0]).into(), (g2 * xbrplusk[1]).into()];
+    let batch = [g2 * br[0], g2 * br[1], g2 * xbrplusk[0], g2 * xbrplusk[1]];
+    let mut out = [G2Affine::default(); 4];
+    G2Projective::batch_normalize(&batch, &mut out);
+
+    let d0 = [out[0], out[1]];
+    let d1 = [out[2], out[3]];
 
     UserSecretKey { d0, d1 }
 }
 
-/// Generate a symmetric key and corresponding CipherText for that key.
+/// Generate a SharedSecret and corresponding Ciphertext for that key.
 pub fn encrypt<R: Rng>(pk: &PublicKey, v: &Identity, rng: &mut R) -> (CipherText, SharedSecret) {
     let s = rand_scalar(rng);
     let id = v.to_scalar();
 
-    let c0: [G1Affine; 2] = [(pk.a_1[0] * s).into(), (pk.a_1[1] * s).into()];
-    let c1: [G1Affine; 2] = [
-        ((pk.w0ta_1[0] * s) + (pk.w1ta_1[0] * (s * id))).into(),
-        ((pk.w0ta_1[1] * s) + (pk.w1ta_1[1] * (s * id))).into(),
+    let batch = [
+        pk.a_1[0] * s,
+        pk.a_1[1] * s,
+        (pk.w0ta_1[0] * s) + (pk.w1ta_1[0] * (s * id)),
+        (pk.w0ta_1[1] * s) + (pk.w1ta_1[1] * (s * id)),
     ];
+
+    let mut out = [G1Affine::default(); 4];
+    G1Projective::batch_normalize(&batch, &mut out);
+
+    let c0 = [out[0], out[1]];
+    let c1 = [out[2], out[3]];
 
     let cprime = pk.kta_t * s;
 
     (CipherText { c0, c1 }, SharedSecret(cprime))
 }
 
-/// Decrypt ciphertext to a SymmetricKey using a user secret key.
+/// Derive the same SharedSecret from the CipherText using a UserSecretKey.
 pub fn decrypt(usk: &UserSecretKey, ct: &CipherText) -> SharedSecret {
     let m = multi_miller_loop(&[
         (&ct.c0[0], &G2Prepared::from(usk.d1[0])),
