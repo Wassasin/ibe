@@ -41,6 +41,7 @@ extern crate std;
 
 mod util;
 
+pub mod chen_gay_wee;
 pub mod kiltz_vahlis_one;
 pub mod waters;
 pub mod waters_naccache;

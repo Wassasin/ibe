@@ -13,7 +13,7 @@ categories = ["cryptography", "no-std"]
 rand = "0.7"
 tiny-keccak = { version = "2.0", features = ["sha3"] }
 arrayref = "0.3"
-irmaseal-curve = "0.1"
+irmaseal-curve = { git = "https://github.com/encryption4all/irmaseal-curve.git", features = ["alloc"] }
 
 [dependencies.subtle]
 version = "2.3"
