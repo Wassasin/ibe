@@ -116,17 +116,13 @@ pub fn setup<R: Rng>(rng: &mut R) -> (PublicKey, SecretKey) {
 
     let mut out = [G1Affine::default(); 6];
     G1Projective::batch_normalize(&batch, &mut out);
-    let a_1 = [out[0], out[1]];
-    let w0ta_1 = [out[2], out[3]];
-    let w1ta_1 = [out[4], out[5]];
-
     let kta_t = pairing(&g1, &g2) * (k[0] * a[0] + k[1] * a[1]);
 
     (
         PublicKey {
-            a_1,
-            w0ta_1,
-            w1ta_1,
+            a_1: [out[0], out[1]],
+            w0ta_1: [out[2], out[3]],
+            w1ta_1: [out[4], out[5]],
             kta_t,
         },
         SecretKey { b, k, w0, w1 },
@@ -162,10 +158,10 @@ pub fn extract_usk<R: Rng>(sk: &SecretKey, v: &Identity, rng: &mut R) -> UserSec
     let mut out = [G2Affine::default(); 4];
     G2Projective::batch_normalize(&batch, &mut out);
 
-    let d0 = [out[0], out[1]];
-    let d1 = [out[2], out[3]];
-
-    UserSecretKey { d0, d1 }
+    UserSecretKey {
+        d0: [out[0], out[1]],
+        d1: [out[2], out[3]],
+    }
 }
 
 /// Generate a SharedSecret and corresponding Ciphertext for that key.
@@ -183,12 +179,15 @@ pub fn encrypt<R: Rng>(pk: &PublicKey, v: &Identity, rng: &mut R) -> (CipherText
     let mut out = [G1Affine::default(); 4];
     G1Projective::batch_normalize(&batch, &mut out);
 
-    let c0 = [out[0], out[1]];
-    let c1 = [out[2], out[3]];
-
     let cprime = pk.kta_t * s;
 
-    (CipherText { c0, c1 }, SharedSecret(cprime))
+    (
+        CipherText {
+            c0: [out[0], out[1]],
+            c1: [out[2], out[3]],
+        },
+        SharedSecret(cprime),
+    )
 }
 
 /// Derive the same SharedSecret from the CipherText using a UserSecretKey.
@@ -263,6 +262,11 @@ impl PublicKey {
     }
 
     pub fn from_bytes(bytes: &[u8; PK_BYTES]) -> CtOption<Self> {
+        // from_compressed_unchecked doesn't check whether the element has
+        // a cofactor. To mount an attack using a cofactor an attacker
+        // must be able to manipulate the public parameters. But then the
+        // attacker can simply use parameters they generated themselves.
+        // Thus checking for a cofactor is superfluous.
         let a10 = G1Affine::from_compressed_unchecked(bytes[0..48].try_into().unwrap());
         let a11 = G1Affine::from_compressed_unchecked(bytes[48..96].try_into().unwrap());
         let w0ta10 = G1Affine::from_compressed_unchecked(bytes[96..144].try_into().unwrap());
