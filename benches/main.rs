@@ -123,13 +123,13 @@ fn criterion_chen_gay_wee_benchmark(criterion: &mut Criterion) {
 
     let (pk, sk) = setup(&mut rng);
     let usk = extract_usk(&sk, &kid, &mut rng);
-    //    let ppk = pk.to_bytes();
+    let ppk = pk.to_bytes();
 
     let (c, _k) = encrypt(&pk, &kid, &mut rng);
 
-    //   criterion.bench_function("chen_gay_wee unpack_pk", |b| {
-    //       b.iter(|| PublicKey::from_bytes(&ppk))
-    //   });
+    criterion.bench_function("chen_gay_wee unpack_pk", |b| {
+        b.iter(|| PublicKey::from_bytes(&ppk))
+    });
     criterion.bench_function("chen_gay_wee setup", |b| {
         let mut rng = rand::thread_rng();
         b.iter(|| setup(&mut rng))
