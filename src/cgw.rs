@@ -1,4 +1,4 @@
-//! Identity Based Encryption by Chen, Gay and Wee.
+//! Fully-secure Identity Based Encryption by Chen, Gay and Wee.
 //!
 //! The structure of the byte serialisation of the various datastructures is not guaranteed
 //! to remain constant between releases of this library.

@@ -113,8 +113,8 @@ fn criterion_kiltz_vahlis_one_benchmark(criterion: &mut Criterion) {
     });
 }
 
-fn criterion_chen_gay_wee_benchmark(criterion: &mut Criterion) {
-    use ibe::chen_gay_wee::*;
+fn criterion_cgw_benchmark(criterion: &mut Criterion) {
+    use ibe::cgw::*;
 
     let mut rng = rand::thread_rng();
 
@@ -127,33 +127,66 @@ fn criterion_chen_gay_wee_benchmark(criterion: &mut Criterion) {
 
     let (c, _k) = encrypt(&pk, &kid, &mut rng);
 
-    criterion.bench_function("chen_gay_wee unpack_pk", |b| {
-        b.iter(|| PublicKey::from_bytes(&ppk))
-    });
-    criterion.bench_function("chen_gay_wee setup", |b| {
+    criterion.bench_function("cgw unpack_pk", |b| b.iter(|| PublicKey::from_bytes(&ppk)));
+    criterion.bench_function("cgw setup", |b| {
         let mut rng = rand::thread_rng();
         b.iter(|| setup(&mut rng))
     });
-    criterion.bench_function("chen_gay_wee derive", move |b| {
-        b.iter(|| Identity::derive(id))
-    });
-    criterion.bench_function("chen_gay_wee extract", move |b| {
+    criterion.bench_function("cgw derive", move |b| b.iter(|| Identity::derive(id)));
+    criterion.bench_function("cgw extract", move |b| {
         let mut rng = rand::thread_rng();
         b.iter(|| extract_usk(black_box(&sk), black_box(&kid), &mut rng))
     });
-    criterion.bench_function("chen_gay_wee encrypt", move |b| {
+    criterion.bench_function("cgw encrypt", move |b| {
         let mut rng = rand::thread_rng();
         b.iter(|| encrypt(black_box(&pk), black_box(&kid), &mut rng))
     });
-    criterion.bench_function("chen_gay_wee decrypt", move |b| {
+    criterion.bench_function("cgw decrypt", move |b| {
         b.iter(|| decrypt(black_box(&usk), black_box(&c)))
     });
 }
+
+fn criterion_cgw_kv_benchmark(criterion: &mut Criterion) {
+    use ibe::cgw_kv::*;
+
+    let mut rng = rand::thread_rng();
+
+    let id = "email:w.geraedts@sarif.nl".as_bytes();
+    let kid = Identity::derive(id);
+
+    let (pk, sk) = setup(&mut rng);
+    let usk = extract_usk(&sk, &kid, &mut rng);
+    let ppk = pk.to_bytes();
+
+    let (c, _k) = encrypt(&pk, &kid, &mut rng);
+
+    criterion.bench_function("cgw_kv unpack_pk", |b| {
+        b.iter(|| PublicKey::from_bytes(&ppk))
+    });
+    criterion.bench_function("cgw_kv setup", |b| {
+        let mut rng = rand::thread_rng();
+        b.iter(|| setup(&mut rng))
+    });
+    criterion.bench_function("cgw_kv derive", move |b| b.iter(|| Identity::derive(id)));
+    criterion.bench_function("cgw_kv extract", move |b| {
+        let mut rng = rand::thread_rng();
+        b.iter(|| extract_usk(black_box(&sk), black_box(&kid), &mut rng))
+    });
+    criterion.bench_function("cgw_kv encrypt", move |b| {
+        let mut rng = rand::thread_rng();
+        b.iter(|| encrypt(black_box(&pk), black_box(&kid), &mut rng))
+    });
+    criterion.bench_function("cgw_kv decrypt", move |b| {
+        b.iter(|| decrypt(black_box(&usk), black_box(&c)))
+    });
+}
+
 criterion_group!(
     benches,
     criterion_waters_benchmark,
     criterion_waters_naccache_benchmark,
     criterion_kiltz_vahlis_one_benchmark,
-    criterion_chen_gay_wee_benchmark,
+    criterion_cgw_benchmark,
+    criterion_cgw_kv_benchmark,
 );
 criterion_main!(benches);
