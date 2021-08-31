@@ -10,7 +10,7 @@
 
 use crate::util::*;
 use arrayref::{array_mut_ref, array_ref, array_refs, mut_array_refs};
-use irmaseal_curve::{G1Affine, G1Projective, G2Affine, Gt, Scalar};
+use irmaseal_curve::{multi_miller_loop, G1Affine, G1Projective, G2Affine, G2Prepared, Gt, Scalar};
 use rand::Rng;
 use subtle::{Choice, ConditionallySelectable, CtOption};
 
@@ -130,10 +130,13 @@ pub fn encrypt<R: Rng>(pk: &PublicKey, v: &Identity, rng: &mut R) -> (CipherText
 /// Decrypt ciphertext to a SymmetricKey using a user secret key.
 pub fn decrypt(usk: &UserSecretKey, c: &CipherText) -> SymmetricKey {
     let t = hash_g2_to_scalar(c.c1);
-    let k1 = irmaseal_curve::pairing(&(usk.d1 + (usk.d3 * t)).into(), &c.c1);
-    let k2 = irmaseal_curve::pairing(&c.c2, &usk.d2);
+    let x: G1Affine = (usk.d1 + (usk.d3 * t)).into();
 
-    let k = k1 + k2;
+    let k = multi_miller_loop(&[
+        (&x, &G2Prepared::from(c.c1)),
+        (&c.c2, &G2Prepared::from(usk.d2)),
+    ])
+    .final_exponentiation();
 
     SymmetricKey(k)
 }
