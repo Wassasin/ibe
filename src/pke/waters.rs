@@ -1,12 +1,6 @@
 //! Identity Based Encryption Waters scheme on the [BLS12-381 pairing-friendly elliptic curve](https://github.com/zkcrypto/bls12_381).
-//!  * From: "[Efficient Identity-Based Encryption Without Random Oracles](https://link.springer.com/chapter/10.1007/11426639_7)"
-//!  * Published in: EUROCRYPT, 2005
-//!
-//! Uses [SHA3-256](https://crates.io/crates/tiny-keccak) for hashing to identities.
-//!
-//! The structure of the byte serialisation of the various datastructures is not guaranteed
-//! to remain constant between releases of this library.
-//! All operations in this library are implemented to run in constant time.
+//! * From: "[Efficient Identity-Based Encryption Without Random Oracles](https://link.springer.com/chapter/10.1007/11426639_7)"
+//! * Published in: EUROCRYPT, 2005
 
 use arrayref::{array_mut_ref, array_ref, array_refs, mut_array_refs};
 use rand::Rng;

@@ -1,16 +1,10 @@
 //! Identity Based Encryption Kiltz-Vahlis IBE1 scheme on the [BLS12-381 pairing-friendly elliptic curve](https://github.com/zkcrypto/bls12_381).
-//!  * From: "[CCA2 Secure IBE: Standard Model Efficiency through Authenticated Symmetric Encryption](https://link.springer.com/chapter/10.1007/978-3-540-79263-5_14)"
-//!  * Published in: CT-RSA, 2008
-//!
-//! Uses [SHA3-512](https://crates.io/crates/tiny-keccak) for hashing to identities.
-//!
-//! The structure of the byte serialisation of the various datastructures is not guaranteed
-//! to remain constant between releases of this library.
-//! All operations in this library are implemented to run in constant time.
+//! * From: "[CCA2 Secure IBE: Standard Model Efficiency through Authenticated Symmetric Encryption](https://link.springer.com/chapter/10.1007/978-3-540-79263-5_14)"
+//! * Published in: CT-RSA, 2008
 
 use crate::util::*;
 use arrayref::{array_mut_ref, array_ref, array_refs, mut_array_refs};
-use irmaseal_curve::{G1Affine, G1Projective, G2Affine, Gt, Scalar};
+use irmaseal_curve::{multi_miller_loop, G1Affine, G1Projective, G2Affine, G2Prepared, Gt, Scalar};
 use rand::Rng;
 use subtle::{Choice, ConditionallySelectable, CtOption};
 
@@ -116,7 +110,7 @@ pub fn extract_usk<R: Rng>(
 }
 
 /// Generate a symmetric key and corresponding CipherText for that key.
-pub fn encrypt<R: Rng>(pk: &PublicKey, v: &Identity, rng: &mut R) -> (CipherText, SymmetricKey) {
+pub fn encaps<R: Rng>(pk: &PublicKey, v: &Identity, rng: &mut R) -> (CipherText, SymmetricKey) {
     let r = rand_scalar(rng);
 
     let c1 = (pk.g * r).into();
@@ -128,12 +122,15 @@ pub fn encrypt<R: Rng>(pk: &PublicKey, v: &Identity, rng: &mut R) -> (CipherText
 }
 
 /// Decrypt ciphertext to a SymmetricKey using a user secret key.
-pub fn decrypt(usk: &UserSecretKey, c: &CipherText) -> SymmetricKey {
+pub fn decaps(usk: &UserSecretKey, c: &CipherText) -> SymmetricKey {
     let t = hash_g2_to_scalar(c.c1);
-    let k1 = irmaseal_curve::pairing(&(usk.d1 + (usk.d3 * t)).into(), &c.c1);
-    let k2 = irmaseal_curve::pairing(&c.c2, &usk.d2);
+    let x: G1Affine = (usk.d1 + (usk.d3 * t)).into();
 
-    let k = k1 + k2;
+    let k = multi_miller_loop(&[
+        (&x, &G2Prepared::from(c.c1)),
+        (&c.c2, &G2Prepared::from(usk.d2)),
+    ])
+    .final_exponentiation();
 
     SymmetricKey(k)
 }
@@ -342,7 +339,7 @@ mod tests {
         let (pk, sk) = setup(&mut rng);
         let usk = extract_usk(&pk, &sk, &kid, &mut rng);
 
-        let (c, k) = encrypt(&pk, &kid, &mut rng);
+        let (c, k) = encaps(&pk, &kid, &mut rng);
 
         DefaultSubResults {
             kid,
@@ -355,9 +352,9 @@ mod tests {
     }
 
     #[test]
-    fn eq_encrypt_decrypt() {
+    fn eq_encaps_decaps() {
         let results = perform_default();
-        let k2 = decrypt(&results.usk, &results.c);
+        let k2 = decaps(&results.usk, &results.c);
 
         assert_eq!(results.k, k2);
     }
