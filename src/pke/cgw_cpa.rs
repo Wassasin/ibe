@@ -1,6 +1,7 @@
 //! Fully-secure Identity Based Encryption by Chen, Gay and Wee.
 //!
 //! This file contains the passively secure public-key encryption algorithm (PKE).
+//! All structs' byte serialization use compression.
 
 use crate::util::*;
 use arrayref::{array_refs, mut_array_refs};
@@ -17,16 +18,14 @@ const K: usize = 256;
 const N: usize = 2 * K;
 pub(crate) const N_BYTE_LEN: usize = N / 8;
 
-// Sizes of elements in particular groups (uncompressed)
-pub(crate) const GT_UNCOMPRESSED_BYTES: usize = 576;
-
 // Sizes of elements in particular groups (compressed)
-pub(crate) const GT_BYTES: usize = 288;
+const GT_BYTES: usize = 288;
 const G1_BYTES: usize = 48;
 const G2_BYTES: usize = 96;
 const SCALAR_BYTES: usize = 32;
 
 // Derived sizes of compressed
+pub(crate) const MSG_BYTES: usize = GT_BYTES;
 pub(crate) const CT_BYTES: usize = 4 * G1_BYTES + GT_BYTES;
 pub(crate) const PK_BYTES: usize = 6 * G1_BYTES + GT_BYTES;
 pub(crate) const SK_BYTES: usize = 12 * SCALAR_BYTES;
@@ -238,20 +237,12 @@ impl Message {
         Self(rand_gt(rng))
     }
 
-    pub fn to_compressed(&self) -> [u8; GT_BYTES] {
+    pub fn to_bytes(&self) -> [u8; GT_BYTES] {
         self.0.to_compressed()
     }
 
-    pub fn from_compressed(bytes: &[u8; GT_BYTES]) -> CtOption<Self> {
+    pub fn from_bytes(bytes: &[u8; GT_BYTES]) -> CtOption<Self> {
         Gt::from_compressed(bytes).map(Self)
-    }
-
-    pub fn to_uncompressed(&self) -> [u8; GT_UNCOMPRESSED_BYTES] {
-        self.0.to_uncompressed()
-    }
-
-    pub fn from_uncompressed(bytes: &[u8; GT_UNCOMPRESSED_BYTES]) -> CtOption<Self> {
-        Gt::from_uncompressed(bytes).map(Self)
     }
 }
 
@@ -499,8 +490,8 @@ impl ConditionallySelectable for CipherText {
 impl Default for UserSecretKey {
     fn default() -> Self {
         UserSecretKey {
-            d0: [G2Affine::default(), G2Affine::default()],
-            d1: [G2Affine::default(), G2Affine::default()],
+            d0: [G2Affine::default(); 2],
+            d1: [G2Affine::default(); 2],
         }
     }
 }

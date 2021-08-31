@@ -10,17 +10,18 @@
 //! A drawback of a Fujisaki-Okamoto transform is that we now need the public key to decapsulate :(
 
 use crate::pke::cgw_cpa::{
-    decrypt, encrypt, CipherText, Message, CT_BYTES, GT_BYTES, GT_UNCOMPRESSED_BYTES, N_BYTE_LEN,
-    USK_BYTES,
+    decrypt, encrypt, CipherText, Message, CT_BYTES, MSG_BYTES, N_BYTE_LEN, USK_BYTES,
 };
 use crate::util::*;
 use arrayref::{array_refs, mut_array_refs};
 use rand::Rng;
 use subtle::{ConditionallySelectable, ConstantTimeEq, CtOption};
 
+// These struct are identical for the CCA KEM
 pub use crate::pke::cgw_cpa::{Identity, PublicKey, SecretKey};
 
-const CCA_USK_BYTES: usize = USK_BYTES + GT_BYTES + N_BYTE_LEN;
+// The USK includes a random message and the identity (needed for re-encryption)
+const CCA_USK_BYTES: usize = USK_BYTES + MSG_BYTES + N_BYTE_LEN;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct SharedSecret([u8; 32]);
@@ -35,20 +36,20 @@ pub struct UserSecretKey {
 impl UserSecretKey {
     pub fn to_bytes(&self) -> [u8; CCA_USK_BYTES] {
         let mut buf = [0u8; CCA_USK_BYTES];
-        let (usk, s, id) = mut_array_refs![&mut buf, USK_BYTES, GT_BYTES, N_BYTE_LEN];
+        let (usk, s, id) = mut_array_refs![&mut buf, USK_BYTES, MSG_BYTES, N_BYTE_LEN];
 
         *usk = self.usk.to_bytes();
-        *s = self.s.to_compressed();
+        *s = self.s.to_bytes();
         id.copy_from_slice(&self.id.0);
 
         buf
     }
 
     pub fn from_bytes(bytes: &[u8; CCA_USK_BYTES]) -> CtOption<Self> {
-        let (usk, s, id) = array_refs![&bytes, USK_BYTES, GT_BYTES, N_BYTE_LEN];
+        let (usk, s, id) = array_refs![&bytes, USK_BYTES, MSG_BYTES, N_BYTE_LEN];
 
         let usk = crate::pke::cgw_cpa::UserSecretKey::from_bytes(usk);
-        let s = Message::from_compressed(s);
+        let s = Message::from_bytes(s);
 
         usk.and_then(|usk| {
             s.map(|s| UserSecretKey {
@@ -67,7 +68,7 @@ pub fn setup<R: Rng>(rng: &mut R) -> (PublicKey, SecretKey) {
 pub fn extract_usk<R: Rng>(sk: &SecretKey, id: &Identity, rng: &mut R) -> UserSecretKey {
     let usk = crate::pke::cgw_cpa::extract_usk(sk, id, rng);
 
-    // include a random target group element to return in case of decapsulation failure.
+    // include a random message to return in case of decapsulation failure
     let s = Message::random(rng);
 
     UserSecretKey { usk, s, id: *id }
@@ -79,15 +80,15 @@ pub fn encaps<R: Rng>(pk: &PublicKey, v: &Identity, rng: &mut R) -> (CipherText,
 
     // encrypt() takes 64 bytes of randomness in this case
     // deterministically generate the randomness from the message using G = sha3_512
-    let coins = sha3_512(&m.to_uncompressed());
+    let coins = sha3_512(&m.to_bytes());
 
     // encrypt the message using deterministic randomness
     let c = encrypt(pk, v, &m, &coins);
 
     // output the shared secret as H(m, c)
-    let mut pre_k = [0u8; GT_UNCOMPRESSED_BYTES + CT_BYTES];
-    pre_k[0..GT_UNCOMPRESSED_BYTES].copy_from_slice(&m.to_uncompressed());
-    pre_k[GT_UNCOMPRESSED_BYTES..].copy_from_slice(&c.to_bytes());
+    let mut pre_k = [0u8; MSG_BYTES + CT_BYTES];
+    pre_k[0..MSG_BYTES].copy_from_slice(&m.to_bytes());
+    pre_k[MSG_BYTES..].copy_from_slice(&c.to_bytes());
 
     let k = sha3_256(&pre_k);
 
@@ -99,19 +100,17 @@ pub fn decaps(pk: &PublicKey, usk: &UserSecretKey, ct: &CipherText) -> SharedSec
     let m = decrypt(&usk.usk, ct);
 
     // Regenerate the deterministic randomness
-    let coins = sha3_512(&m.to_uncompressed());
+    let coins = sha3_512(&m.to_bytes());
 
     // Re-encrypt the message
     let ct2 = encrypt(pk, &usk.id, &m, &coins);
 
-    // If the ciphertexts were equal, return H(m', c) otherwise return H(s, c), in constant time
+    // If the ciphertexts were equal, return H(m', c), otherwise return H(s, c), in constant time
     let m = Message::conditional_select(&m, &usk.s, ct.ct_eq(&ct2));
 
-    let mut pre_k = [0u8; GT_UNCOMPRESSED_BYTES + CT_BYTES];
-    pre_k[0..GT_UNCOMPRESSED_BYTES].copy_from_slice(&m.to_uncompressed());
-
-    // TODO: can possibly improve performance by not compressing here
-    pre_k[GT_UNCOMPRESSED_BYTES..].copy_from_slice(&ct.to_bytes());
+    let mut pre_k = [0u8; MSG_BYTES + CT_BYTES];
+    pre_k[0..MSG_BYTES].copy_from_slice(&m.to_bytes());
+    pre_k[MSG_BYTES..].copy_from_slice(&ct.to_bytes());
 
     SharedSecret(sha3_256(&pre_k))
 }
