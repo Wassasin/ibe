@@ -2,12 +2,6 @@
 //!  * Inspired by: [CHARM implementation](https://github.com/JHUISI/charm/blob/dev/charm/schemes/ibenc/ibenc_waters05.py)
 //!  * From: "[Secure and Practical Identity-Based Encryption](http://eprint.iacr.org/2005/369.pdf)"
 //!  * Published in: IET Information Security, 2007
-//!
-//! Uses [SHA3-512](https://crates.io/crates/tiny-keccak) for hashing to identities.
-//!
-//! The structure of the byte serialisation of the various datastructures is not guaranteed
-//! to remain constant between releases of this library.
-//! All operations in this library are implemented to run in constant time.
 
 use arrayref::{array_mut_ref, array_ref, array_refs, mut_array_refs};
 use rand::Rng;
